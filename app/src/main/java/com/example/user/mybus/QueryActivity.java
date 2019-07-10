@@ -9,7 +9,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.api.net.PlacesClient;
@@ -17,7 +16,6 @@ import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 
 
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -26,7 +24,9 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import static util.Config.DEFAULT_CAMERA_VIEW;
 import static util.Config.DEFAULT_MAP_TYPE;
+import static util.Config.MAP_ZOOM_VALUE;
 import static util.Config.PLACE_FIELDS;
 import static util.Constants.ARRIVAL;
 import static util.Constants.DEPARTURE;
@@ -72,12 +72,19 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
     public void onMapReady(GoogleMap gMap) {
         googleMap = gMap;
         googleMap.setMapType(DEFAULT_MAP_TYPE);
-        setupToggleButton();
+        googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(DEFAULT_CAMERA_VIEW));
+        googleMap.setOnMapClickListener(getOnMapClickListener());
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        googleMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        googleMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        setupToggleButton();
+    }
+
+    private GoogleMap.OnMapClickListener getOnMapClickListener() {
+        return new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(LatLng latLng) {
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, MAP_ZOOM_VALUE));
+            }
+        };
     }
 
     private void setupToggleButton() {
@@ -128,6 +135,7 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
                 } else {
                     arrivalPlace = place;
                 }
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(place.getLatLng(), MAP_ZOOM_VALUE));
             }
 
             @Override
