@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">MyBus</string>
     <string name="title_activity_maps">Map</string>
+    <string name="departure"><b>Departure</b></string>
+    <string name="location"><b>Location:</b></string>
+    <string name="radius"><b>Radius:</b></string>
+    <string name="departure_location_hint">Enter departure location</string>
 </resources>

@@ -183,7 +183,8 @@ public class MainActivity extends AppCompatActivity {
 
     // Start MyBus
     private void startMyBus() {
-        Intent intent = new Intent(MainActivity.this, MapsActivity.class);
+        Intent intent = new Intent(MainActivity.this, QueryActivity.class);
         startActivity(intent);
+        finish();
     }
 }
