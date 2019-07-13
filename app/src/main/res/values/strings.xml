@@ -1,11 +1,11 @@
 <resources>
     <string name="app_name">MyBus</string>
     <string name="title_activity_maps">Map</string>
-    <string name="departure"><b>Departure</b></string>
-    <string name="arrival"><b>Arrival</b></string>
-    <string name="radius"><b>Radius:</b></string>
+    <string name="departure_radius"><b>Departure radius:</b></string>
+    <string name="arrival_radius"><b>Arrival radius:</b></string>
     <string name="departure_location_hint">Enter departure location</string>
     <string name="arrival_location_hint">Enter arrival location</string>
+    <string name="button_query">Find my bus</string>
     <string name="geocoder_unknown_address">Unknown Address</string>
     <string name="info_window_set_as_snippet">Click to set as departure / arrival</string>
     <string-array name="spinner_radius">
