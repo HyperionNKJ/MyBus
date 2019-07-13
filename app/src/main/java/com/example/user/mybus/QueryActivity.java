@@ -4,11 +4,14 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.common.api.Status;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.api.net.PlacesClient;
@@ -16,6 +19,8 @@ import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 
 
+import android.location.Address;
+import android.location.Geocoder;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -24,10 +29,14 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import static util.Config.DEFAULT_CAMERA_VIEW;
+import java.util.List;
+import java.util.Locale;
+
 import static util.Config.DEFAULT_MAP_TYPE;
 import static util.Config.MAP_ZOOM_VALUE;
+import static util.Config.OVERVIEW_ZOOM_VALUE;
 import static util.Config.PLACE_FIELDS;
+import static util.Config.SINGAPORE;
 import static util.Constants.ARRIVAL;
 import static util.Constants.DEPARTURE;
 
@@ -42,6 +51,7 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
     private Spinner departureRadius;
     private Spinner arrivalRadius;
     private Button mapTypeButton;
+    private Marker mapMarker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,19 +82,74 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
     public void onMapReady(GoogleMap gMap) {
         googleMap = gMap;
         googleMap.setMapType(DEFAULT_MAP_TYPE);
-        googleMap.moveCamera(CameraUpdateFactory.newCameraPosition(DEFAULT_CAMERA_VIEW));
+        updateCamera(SINGAPORE, false, true, OVERVIEW_ZOOM_VALUE);
         googleMap.setOnMapClickListener(getOnMapClickListener());
+        googleMap.setOnMarkerClickListener(getOnMarkerClickListener());
 
         setupToggleButton();
+        setupResetButton();
     }
 
     private GoogleMap.OnMapClickListener getOnMapClickListener() {
         return new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
-                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, MAP_ZOOM_VALUE));
+                if (googleMap.getCameraPosition().zoom <= OVERVIEW_ZOOM_VALUE) {
+                    updateCamera(latLng, true, true, MAP_ZOOM_VALUE);
+                } else {
+                    if (mapMarker == null) {
+                        placeNewMarker(latLng);
+                    } else {
+                        updateExistingMarker(latLng);
+                    }
+                    updateCamera(latLng, true, false, -1);
+                }
+
             }
         };
+    }
+
+    // always centers camera at given LatLng
+    private void updateCamera(LatLng newLatLng, boolean willAnimate, boolean willZoom, float zoomValue) {
+        CameraUpdate cameraUpdate;
+        if (willZoom) {
+            cameraUpdate = CameraUpdateFactory.newLatLngZoom(newLatLng, zoomValue);
+        } else {
+            cameraUpdate = CameraUpdateFactory.newLatLng(newLatLng);
+        }
+        if (willAnimate) {
+            googleMap.animateCamera(cameraUpdate);
+        } else {
+            googleMap.moveCamera(cameraUpdate);
+        }
+    }
+
+    private void placeNewMarker(LatLng latLng) {
+        mapMarker = googleMap.addMarker(new MarkerOptions()
+                .position(latLng)
+                .draggable(true)
+                .title(getPositionAddress(latLng)));
+        updateIsInfoWindowShown(false);
+    }
+
+    private String getPositionAddress(LatLng latLng) {
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        try {
+            List<Address> addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
+            return addresses.get(0).getAddressLine(0);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "Unknown address";
+    }
+
+    private void updateExistingMarker(LatLng latLng) {
+        boolean isInfoWindowShownInitially = isInfoWindowShown();
+        mapMarker.setPosition(latLng); // teleport to new position, hiding the info window
+        mapMarker.setTitle(getPositionAddress(latLng));
+        if (isInfoWindowShownInitially) {
+            mapMarker.showInfoWindow();
+        }
     }
 
     private void setupToggleButton() {
@@ -107,6 +172,48 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
     private void updateButtonIcon() {
         int appropriateIconID = (googleMap.getMapType() == GoogleMap.MAP_TYPE_HYBRID) ? R.drawable.b_toggle_default : R.drawable.b_toggle_satellite;
         mapTypeButton.setBackground(getResources().getDrawable(appropriateIconID));
+    }
+
+    private void setupResetButton() {
+        findViewById(R.id.b_map_reset).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                removeExistingMarker();
+                updateCamera(SINGAPORE, true, true, OVERVIEW_ZOOM_VALUE);
+            }
+        });
+    }
+
+    private void removeExistingMarker() {
+        if (mapMarker != null) {
+            mapMarker.remove(); // remove from map
+            mapMarker = null; // remove the object from reference
+        }
+    }
+
+    private GoogleMap.OnMarkerClickListener getOnMarkerClickListener() {
+        return new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                boolean isInfoWindowShown = isInfoWindowShown();
+                if (isInfoWindowShown) {
+                    marker.hideInfoWindow();
+                } else {
+                    marker.showInfoWindow();
+                    updateCamera(marker.getPosition(), true, false, -1);
+                }
+                updateIsInfoWindowShown(!isInfoWindowShown);
+                return true; // Return not used
+            }
+        };
+    }
+
+    private void updateIsInfoWindowShown(boolean bool) {
+        mapMarker.setTag(bool); // tag = boolean isInfoWindowShown
+    }
+
+    private boolean isInfoWindowShown() {
+        return (boolean) mapMarker.getTag();
     }
 
     private void setupAutocompleteSearch(int type) {
