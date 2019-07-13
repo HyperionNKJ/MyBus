@@ -6,6 +6,8 @@
     <string name="radius"><b>Radius:</b></string>
     <string name="departure_location_hint">Enter departure location</string>
     <string name="arrival_location_hint">Enter arrival location</string>
+    <string name="geocoder_unknown_address">Unknown Address</string>
+    <string name="info_window_set_as_snippet">Click to set as departure / arrival</string>
     <string-array name="spinner_radius">
         <item>50m</item>
         <item>100m</item>

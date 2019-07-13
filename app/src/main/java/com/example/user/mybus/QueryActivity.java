@@ -85,6 +85,7 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
         updateCamera(SINGAPORE, false, true, OVERVIEW_ZOOM_VALUE);
         googleMap.setOnMapClickListener(getOnMapClickListener());
         googleMap.setOnMarkerClickListener(getOnMarkerClickListener());
+        googleMap.setOnMarkerDragListener(getOnMarkerDragListener());
 
         setupToggleButton();
         setupResetButton();
@@ -128,7 +129,8 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
         mapMarker = googleMap.addMarker(new MarkerOptions()
                 .position(latLng)
                 .draggable(true)
-                .title(getPositionAddress(latLng)));
+                .title(getPositionAddress(latLng))
+                .snippet(getString(R.string.info_window_set_as_snippet)));
         updateIsInfoWindowShown(false);
     }
 
@@ -140,7 +142,7 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return "Unknown address";
+        return getString(R.string.geocoder_unknown_address);
     }
 
     private void updateExistingMarker(LatLng latLng) {
@@ -203,7 +205,7 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
                     updateCamera(marker.getPosition(), true, false, -1);
                 }
                 updateIsInfoWindowShown(!isInfoWindowShown);
-                return true; // Return not used
+                return true; // Prevent map's default behavior from occurring
             }
         };
     }
@@ -214,6 +216,28 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
 
     private boolean isInfoWindowShown() {
         return (boolean) mapMarker.getTag();
+    }
+
+    private GoogleMap.OnMarkerDragListener getOnMarkerDragListener() {
+        return new GoogleMap.OnMarkerDragListener() {
+            @Override
+            public void onMarkerDragStart(Marker marker) {
+                marker.hideInfoWindow();
+            }
+
+            @Override
+            public void onMarkerDrag(Marker marker) {}
+
+            @Override
+            public void onMarkerDragEnd(Marker marker) {
+                LatLng newPosition = marker.getPosition();
+                updateCamera(newPosition, true, false, -1);
+                marker.setTitle(getPositionAddress(newPosition));
+                if (isInfoWindowShown()) {
+                    marker.showInfoWindow();
+                }
+            }
+        };
     }
 
     private void setupAutocompleteSearch(int type) {
