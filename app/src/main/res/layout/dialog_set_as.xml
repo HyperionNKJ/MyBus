@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="10dp">
+
+    <TextView
+        style="@style/TextAppearance.AppCompat.Medium"
+        android:textColor="@android:color/black"
+        android:id="@+id/tv_place_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <View
+        style="@style/partition_line"
+        android:layout_width="match_parent"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp">
+
+        <TextView
+            style="@style/TextAppearance.AppCompat.Small"
+            android:text="@string/dialog_set_as"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textColor="@android:color/black"/>
+
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/departure"
+                android:layout_marginEnd="25dp"/>
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/arrival"/>
+        </RadioGroup>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp">
+
+        <TextView
+            style="@style/TextAppearance.AppCompat.Small"
+            android:text="@string/dialog_radius"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
+            android:textColor="@android:color/black"/>
+
+        <TextView
+            android:id="@+id/sb_radius_progress"
+            style="@style/TextAppearance.AppCompat.Small"
+            android:layout_width="50dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textColor="@android:color/black"/>
+
+        <androidx.appcompat.widget.AppCompatSeekBar
+            android:id="@+id/sb_radius"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:min="@string/seekbar_minimum_radius"
+            android:max="@string/seekbar_maximum_radius"
+            android:thumb="@drawable/sb_thumb"
+            android:layout_gravity="center"
+            tools:ignore="UnusedAttribute" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/b_enter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/dialog_enter_message"/>
+</LinearLayout>

@@ -1,6 +1,7 @@
 package com.example.user.mybus;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.common.api.Status;
@@ -19,6 +20,7 @@ import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
 
 
+import android.annotation.SuppressLint;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
@@ -26,7 +28,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.SeekBar;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.List;
@@ -86,6 +90,7 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
         googleMap.setOnMapClickListener(getOnMapClickListener());
         googleMap.setOnMarkerClickListener(getOnMarkerClickListener());
         googleMap.setOnMarkerDragListener(getOnMarkerDragListener());
+        googleMap.setOnInfoWindowClickListener(getOnInfoWindowClickListener());
 
         setupToggleButton();
         setupResetButton();
@@ -237,6 +242,53 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
                     marker.showInfoWindow();
                 }
             }
+        };
+    }
+
+    private GoogleMap.OnInfoWindowClickListener getOnInfoWindowClickListener() {
+        return new GoogleMap.OnInfoWindowClickListener() {
+            @Override
+            public void onInfoWindowClick(Marker marker) {
+                showSetAsDialog(marker.getTitle());
+            }
+        };
+    }
+
+    private void showSetAsDialog(String placeName) {
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(QueryActivity.this);
+        final View dialogView = getLayoutInflater().inflate(R.layout.dialog_set_as, null);
+        dialogBuilder.setView(dialogView);
+        dialogBuilder.setCancelable(true);
+
+        initializeDialog(dialogView, placeName);
+        final AlertDialog alertDialog = dialogBuilder.create();
+        alertDialog.show();
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void initializeDialog(View dialogView, String placeName) {
+        TextView mPlaceName = dialogView.findViewById(R.id.tv_place_name);
+        mPlaceName.setText(placeName);
+
+        SeekBar radiusSeekbar = dialogView.findViewById(R.id.sb_radius);
+        TextView radiusProgress = dialogView.findViewById(R.id.sb_radius_progress);
+        radiusProgress.setText(radiusSeekbar.getProgress() + "m");
+        radiusSeekbar.setOnSeekBarChangeListener(getOnSeekBarChangeListener(radiusProgress));
+    }
+
+    @SuppressLint("SetTextI18n")
+    private SeekBar.OnSeekBarChangeListener getOnSeekBarChangeListener(final TextView radiusProgress) {
+        return new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                radiusProgress.setText(i + "m");
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
         };
     }
 

@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">MyBus</string>
     <string name="title_activity_maps">Map</string>
+    <string name="departure">Departure</string>
+    <string name="arrival">Arrival</string>
     <string name="departure_radius"><b>Departure radius:</b></string>
     <string name="arrival_radius"><b>Arrival radius:</b></string>
     <string name="departure_location_hint">Enter departure location</string>
@@ -8,6 +10,9 @@
     <string name="button_query">Find my bus</string>
     <string name="geocoder_unknown_address">Unknown Address</string>
     <string name="info_window_set_as_snippet">Click to set as departure / arrival</string>
+    <string name="dialog_set_as">Set as:</string>
+    <string name="dialog_radius">Radius:</string>
+    <string name="dialog_enter_message">Enter</string>
     <string-array name="spinner_radius">
         <item>50m</item>
         <item>100m</item>
@@ -17,4 +22,6 @@
         <item>800m</item>
         <item>1000m</item>
     </string-array>
+    <string name="seekbar_minimum_radius">50</string>
+    <string name="seekbar_maximum_radius">1000</string>
 </resources>
