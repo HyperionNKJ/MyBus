@@ -33,18 +33,21 @@
             android:textColor="@android:color/black"/>
 
         <RadioGroup
+            android:id="@+id/rg_set_as"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center">
 
             <RadioButton
+                android:id="@+id/rb_departure"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/departure"
                 android:layout_marginEnd="25dp"/>
 
             <RadioButton
+                android:id="@+id/rb_arrival"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/arrival"/>

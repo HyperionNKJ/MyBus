@@ -3,6 +3,7 @@ package com.example.user.mybus;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentManager;
 
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.maps.CameraUpdate;
@@ -26,8 +27,10 @@ import android.location.Geocoder;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -50,12 +53,25 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
 
     private GoogleMap googleMap;
     private PlacesClient placesClient;
-    private Place departurePlace;
-    private Place arrivalPlace;
-    private Spinner departureRadius;
-    private Spinner arrivalRadius;
     private Button mapTypeButton;
     private Marker mapMarker;
+
+    // Direct input
+    private AutocompleteSupportFragment mDepartureSearch;
+    private Spinner mDepartureRadius;
+    private AutocompleteSupportFragment mArrivalSearch;
+    private Spinner mArrivalRadius;
+
+    // Set-as dialog
+    private RadioGroup setAsRadioGroup;
+    private SeekBar radiusSeekbar;
+    private TextView radiusProgress;
+
+    // Query data
+    private LatLng departureCoord;
+    private int departureRadius;
+    private LatLng arrivalCoord;
+    private int arrivalRadius;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -249,39 +265,42 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
         return new GoogleMap.OnInfoWindowClickListener() {
             @Override
             public void onInfoWindowClick(Marker marker) {
-                showSetAsDialog(marker.getTitle());
+                showSetAsDialog(marker.getTitle(), marker.getPosition());
             }
         };
     }
 
-    private void showSetAsDialog(String placeName) {
+    private void showSetAsDialog(String placeName, LatLng placeCoord) {
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(QueryActivity.this);
         final View dialogView = getLayoutInflater().inflate(R.layout.dialog_set_as, null);
         dialogBuilder.setView(dialogView);
         dialogBuilder.setCancelable(true);
 
-        initializeDialog(dialogView, placeName);
+        initializeDialog(dialogView, placeName, placeCoord);
         final AlertDialog alertDialog = dialogBuilder.create();
         alertDialog.show();
     }
 
     @SuppressLint("SetTextI18n")
-    private void initializeDialog(View dialogView, String placeName) {
-        TextView mPlaceName = dialogView.findViewById(R.id.tv_place_name);
-        mPlaceName.setText(placeName);
+    private void initializeDialog(View dialogView, String placeName, LatLng placeCoord) {
+        ((TextView) dialogView.findViewById(R.id.tv_place_name)).setText(placeName);
 
-        SeekBar radiusSeekbar = dialogView.findViewById(R.id.sb_radius);
-        TextView radiusProgress = dialogView.findViewById(R.id.sb_radius_progress);
-        radiusProgress.setText(radiusSeekbar.getProgress() + "m");
-        radiusSeekbar.setOnSeekBarChangeListener(getOnSeekBarChangeListener(radiusProgress));
+        setAsRadioGroup = dialogView.findViewById(R.id.rg_set_as);
+
+        radiusSeekbar = dialogView.findViewById(R.id.sb_radius);
+        radiusProgress = dialogView.findViewById(R.id.sb_radius_progress);
+        radiusProgress.setText(radiusSeekbar.getProgress() + "m"); // show default progress
+        radiusSeekbar.setOnSeekBarChangeListener(getOnSeekBarChangeListener());
+
+        dialogView.findViewById(R.id.b_enter).setOnClickListener(getEnterButtonOnClickListener(placeName, placeCoord));
     }
 
     @SuppressLint("SetTextI18n")
-    private SeekBar.OnSeekBarChangeListener getOnSeekBarChangeListener(final TextView radiusProgress) {
+    private SeekBar.OnSeekBarChangeListener getOnSeekBarChangeListener() {
         return new SeekBar.OnSeekBarChangeListener() {
             @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                radiusProgress.setText(i + "m");
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean b) {
+                radiusProgress.setText(progress + "m");
             }
 
             @Override
@@ -292,13 +311,41 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
         };
     }
 
+    private View.OnClickListener getEnterButtonOnClickListener(final String placeName, final LatLng placeCoord) {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (setAsRadioGroup.getCheckedRadioButtonId() == R.id.rb_departure) {
+                    mDepartureSearch.setText(placeName);
+
+                    // TODO Logic for when enter button is pressed
+                    departureCoord = placeCoord;
+                    departureRadius = radiusSeekbar.getProgress();
+//                    mDepartureRadius.set radiusSeekbar.getProgress();
+                } else {
+                    arrivalCoord = placeCoord;
+                    mArrivalSearch.setText(placeName);
+                    arrivalRadius = radiusSeekbar.getProgress();
+                }
+            }
+        };
+    }
+
     private void setupAutocompleteSearch(int type) {
-        AutocompleteSupportFragment autocompleteFragment = (AutocompleteSupportFragment)
-                getSupportFragmentManager().findFragmentById(
-                        (type == DEPARTURE) ? R.id.frag_departure_location : R.id.frag_arrival_location);
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        AutocompleteSupportFragment autocompleteFragment;
+
+        if (type == DEPARTURE) {
+            autocompleteFragment = (AutocompleteSupportFragment) fragmentManager.findFragmentById(R.id.frag_departure_location);
+            autocompleteFragment.setHint(getString(R.string.departure_location_hint));
+            mDepartureSearch = autocompleteFragment;
+        } else {
+            autocompleteFragment = (AutocompleteSupportFragment) fragmentManager.findFragmentById(R.id.frag_arrival_location);
+            autocompleteFragment.setHint(getString(R.string.arrival_location_hint));
+            mArrivalSearch = autocompleteFragment;
+        }
 
         autocompleteFragment.setPlaceFields(PLACE_FIELDS);
-        autocompleteFragment.setHint(getString((type == DEPARTURE) ? R.string.departure_location_hint : R.string.arrival_location_hint));
         autocompleteFragment.setCountry("SG");
         autocompleteFragment.setOnPlaceSelectedListener(getPlaceSelectionListener(type));
     }
@@ -307,18 +354,17 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
         return new PlaceSelectionListener() {
             @Override
             public void onPlaceSelected(@NonNull Place place) {
-                Log.d(TAG, ".\n==================================================================\n" +
-                        "Selected " + ((type == DEPARTURE) ? "departure" : "arrival") + " place:" +
-                        "\nName: " + place.getName() +
-                        "\nID: " + place.getId() +
-                        "\nCo-ord: " + place.getLatLng() +
-                        "\n==================================================================\n");
+                Log.d(TAG, printPlaceSelected(place, type));
+
+                LatLng placeLatLng = place.getLatLng();
                 if (type == DEPARTURE) {
-                    departurePlace = place;
+                    departureCoord = placeLatLng;
+                    Log.d(TAG, printQueryData("Departure Co-ord"));
                 } else {
-                    arrivalPlace = place;
+                    arrivalCoord = placeLatLng;
+                    Log.d(TAG, printQueryData("Arrival Co-ord"));
                 }
-                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(place.getLatLng(), MAP_ZOOM_VALUE));
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(placeLatLng, MAP_ZOOM_VALUE));
             }
 
             @Override
@@ -334,12 +380,61 @@ public class QueryActivity extends AppCompatActivity implements OnMapReadyCallba
                 R.array.spinner_radius, R.layout.spinner_radius);
         adapter.setDropDownViewResource(R.layout.spinner_radius);
 
+        Spinner spinner;
+
         if (type == DEPARTURE) {
-            departureRadius = findViewById(R.id.spinner_departure_radius);
-            departureRadius.setAdapter(adapter);
+            spinner = findViewById(R.id.spinner_departure_radius);
+            mDepartureRadius = spinner;
         } else {
-            arrivalRadius = findViewById(R.id.spinner_arrival_radius);
-            arrivalRadius.setAdapter(adapter);
+            spinner = findViewById(R.id.spinner_arrival_radius);
+            mArrivalRadius = spinner;
         }
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(getOnItemSelectedListener(type));
+    }
+
+    private Spinner.OnItemSelectedListener getOnItemSelectedListener(final int type) {
+        return new Spinner.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int pos, long id) {
+                String selectedRadiusWithMetre = (String) adapterView.getItemAtPosition(pos); // e,g. "50m"
+                int selectedRadius = parseRadiusWithMetre(selectedRadiusWithMetre);
+                if (type == DEPARTURE) {
+                    departureRadius = selectedRadius;
+                    Log.d(TAG, printQueryData("Departure Radius"));
+                } else {
+                    arrivalRadius = selectedRadius;
+                    Log.d(TAG, printQueryData("Arrival Radius"));
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {}
+        };
+    }
+
+    private int parseRadiusWithMetre(String radiusWithMetre) {
+        String radiusWithoutMetre =  radiusWithMetre.substring(0, radiusWithMetre.length() - 1);
+        return Integer.parseInt(radiusWithoutMetre);
+    }
+
+    // ================================== FOR DEBUGGING PURPOSE ==================================  //
+    private String printPlaceSelected(Place place, int type) {
+        return ".\n==================================================================\n" +
+                "Selected " + ((type == DEPARTURE) ? "departure" : "arrival") + " place:" +
+                "\nName: " + place.getName() +
+                "\nID: " + place.getId() +
+                "\nCo-ord: " + place.getLatLng() +
+                "\n==================================================================\n";
+    }
+
+    private String printQueryData(String updatedData) {
+        return  ".\n==================================================================\n" +
+                "Change has been made to: " + updatedData +
+                "\nDeparture Co-ord: " + departureCoord +
+                "\nDeparture Radius: " + departureRadius +
+                "\nArrival Co-ord: " + arrivalCoord +
+                "\nArrival Radius: " + arrivalRadius +
+                "\n==================================================================\n";
     }
 }
